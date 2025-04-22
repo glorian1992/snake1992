@@ -1,0 +1,142 @@
+/* Albanian theme colors */
+:root {
+    --albanian-red: #E41E20;
+    --albanian-black: #000000;
+    --snake-green: #2E7D32;
+    --food-color: var(--albanian-red);
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: var(--albanian-red);
+    font-family: Arial, sans-serif;
+}
+
+canvas {
+    border: 4px solid var(--albanian-black);
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    position: relative;
+    z-index: 1;
+}
+
+.game-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-container::before {
+    content: '🦅';
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.1;
+    z-index: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.game-info {
+    background-color: var(--albanian-black);
+    color: #ffffff;
+    padding: 15px 30px;
+    border-radius: 10px;
+    margin-top: 20px;
+    font-size: 24px;
+    display: flex;
+    gap: 20px;
+}
+
+.restart-button {
+    background-color: var(--albanian-red);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 18px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+    margin-top: 15px;
+}
+
+.restart-button:hover {
+    background-color: #c41a1c;
+    transform: scale(1.05);
+}
+
+.intro-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--albanian-red);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+    font-size: 48px;
+    text-align: center;
+}
+
+.intro-screen h1 {
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.intro-screen p {
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+.level-up-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--albanian-red);
+    color: white;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    display: none;
+}
+
+.level-up-popup h2 {
+    font-size: 36px;
+    margin-bottom: 15px;
+}
+
+.level-up-popup p {
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+.level-indicator {
+    background-color: var(--albanian-red);
+    padding: 5px 15px;
+    border-radius: 5px;
+    margin-left: 10px;
+}
+
+.albanian-symbol {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 40px;
+    color: var(--albanian-black);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
