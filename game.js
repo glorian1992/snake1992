@@ -68,9 +68,11 @@ class Game {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.gridSize = 20;
-        this.tileSize = this.canvas.width / this.gridSize;
+        this.setupCanvas();
         this.gameLoopId = null;
         this.initGame();
+        this.touchStartX = null;
+        this.touchStartY = null;
 
         // Show intro screen for 3 seconds
         const introScreen = document.getElementById('introScreen');
@@ -80,6 +82,11 @@ class Game {
         }, 3000);
 
         document.addEventListener('keydown', this.handleKeyPress.bind(this));
+        
+        // Add touch event listeners for mobile
+        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
+        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
+        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
         document.getElementById('restartButton').addEventListener('click', () => {
             if (this.gameLoopId) {
                 clearTimeout(this.gameLoopId);
@@ -131,6 +138,63 @@ class Game {
         }
 
         return food;
+    }
+
+    setupCanvas() {
+        const maxSize = Math.min(window.innerWidth - 40, window.innerHeight - 200);
+        this.canvas.width = Math.min(400, maxSize);
+        this.canvas.height = Math.min(400, maxSize);
+        this.tileSize = this.canvas.width / this.gridSize;
+    }
+
+    handleTouchStart(event) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        this.touchStartX = touch.clientX - rect.left;
+        this.touchStartY = touch.clientY - rect.top;
+    }
+
+    handleTouchMove(event) {
+        event.preventDefault();
+        if (!this.touchStartX || !this.touchStartY) return;
+
+        const touch = event.touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const currentX = touch.clientX - rect.left;
+        const currentY = touch.clientY - rect.top;
+
+        const deltaX = currentX - this.touchStartX;
+        const deltaY = currentY - this.touchStartY;
+
+        // Minimum swipe distance threshold
+        const minSwipeDistance = 30;
+
+        if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX > 0) {
+                    this.snake.changeDirection('right');
+                } else {
+                    this.snake.changeDirection('left');
+                }
+            } else {
+                if (deltaY > 0) {
+                    this.snake.changeDirection('down');
+                } else {
+                    this.snake.changeDirection('up');
+                }
+            }
+            
+            // Reset touch start position after direction change
+            this.touchStartX = currentX;
+            this.touchStartY = currentY;
+        }
+    }
+
+    handleTouchEnd(event) {
+        event.preventDefault();
+        this.touchStartX = null;
+        this.touchStartY = null;
     }
 
     handleKeyPress(event) {

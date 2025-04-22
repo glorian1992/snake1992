@@ -11,10 +11,12 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
+    padding: 20px;
     background-color: var(--albanian-red);
     font-family: Arial, sans-serif;
+    box-sizing: border-box;
 }
 
 canvas {
@@ -24,6 +26,9 @@ canvas {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
     position: relative;
     z-index: 1;
+    max-width: 100%;
+    max-height: 100vw;
+    touch-action: none;
 }
 
 .game-container {
@@ -50,9 +55,10 @@ canvas {
     padding: 15px 30px;
     border-radius: 10px;
     margin-top: 20px;
-    font-size: 24px;
+    font-size: clamp(16px, 5vw, 24px);
     display: flex;
     gap: 20px;
+    width: fit-content;
 }
 
 .restart-button {
