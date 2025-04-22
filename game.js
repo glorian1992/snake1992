@@ -73,42 +73,61 @@ class Game {
         this.initGame();
         this.touchStartX = null;
         this.touchStartY = null;
+        this.paused = false;
 
         // Show intro screen for 3 seconds
         const introScreen = document.getElementById('introScreen');
         introScreen.style.display = 'flex';
         setTimeout(() => {
             introScreen.style.display = 'none';
+            this.paused = false;
         }, 3000);
+
+        // Add window resize event
+        window.addEventListener('resize', this.handleResize.bind(this));
 
         document.addEventListener('keydown', this.handleKeyPress.bind(this));
         
-        // Add touch event listeners for mobile
-        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this));
-        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this));
-        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this));
-        document.getElementById('restartButton').addEventListener('click', () => {
-            if (this.gameLoopId) {
-                clearTimeout(this.gameLoopId);
-                this.gameLoopId = null;
-            }
-            this.snake = new Snake();
-            this.food = this.generateFood();
-            this.score = 0;
-            this.level = 1;
-            this.gameOver = false;
-            document.getElementById('score').textContent = this.score;
-            document.getElementById('level').textContent = this.level;
-            this.startGameLoop();
-        });
+        // Add touch event listeners for mobile - ensure they're properly passive
+        this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), {passive: false});
+        this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), {passive: false});
+        this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), {passive: false});
+        
+        document.getElementById('restartButton').addEventListener('click', this.restartGame.bind(this));
+        
+        // Start the game loop only once
+        this.startGameLoop();
+    }
+
+    handleResize() {
+        this.setupCanvas();
+        this.draw(); // Redraw immediately after resize
+    }
+
+    restartGame() {
+        if (this.gameLoopId) {
+            clearTimeout(this.gameLoopId);
+            this.gameLoopId = null;
+        }
+        this.snake = new Snake();
+        this.food = this.generateFood();
+        this.score = 0;
+        this.level = 1;
+        this.gameOver = false;
+        this.paused = false;
+        document.getElementById('score').textContent = this.score;
+        document.getElementById('level').textContent = this.level;
         this.startGameLoop();
     }
 
     startGameLoop() {
         const loop = () => {
-            this.update();
+            if (!this.paused) {
+                this.update();
+            }
             this.draw();
-            const delay = Math.max(50, 150 - (this.level * 10));
+            // Adjust speed based on level: starts at 200ms delay at level 1, decreases by 15ms per level
+            const delay = Math.max(50, 200 - ((this.level - 1) * 15));
             this.gameLoopId = setTimeout(loop, delay);
         };
         loop();
@@ -120,6 +139,7 @@ class Game {
         this.score = 0;
         this.level = 1;
         this.gameOver = false;
+        this.paused = true; // Start paused for intro screen
         document.getElementById('score').textContent = this.score;
         document.getElementById('level').textContent = this.level;
     }
@@ -141,14 +161,20 @@ class Game {
     }
 
     setupCanvas() {
-        const maxSize = Math.min(window.innerWidth - 40, window.innerHeight - 200);
-        this.canvas.width = Math.min(400, maxSize);
-        this.canvas.height = Math.min(400, maxSize);
+        // Better mobile-friendly canvas sizing
+        const maxWidth = Math.min(window.innerWidth - 20, 400);
+        const maxHeight = Math.min(window.innerHeight - 160, 400);
+        const size = Math.min(maxWidth, maxHeight);
+        
+        this.canvas.width = size;
+        this.canvas.height = size;
         this.tileSize = this.canvas.width / this.gridSize;
     }
 
     handleTouchStart(event) {
         event.preventDefault();
+        if (this.gameOver) return;
+        
         const touch = event.touches[0];
         const rect = this.canvas.getBoundingClientRect();
         this.touchStartX = touch.clientX - rect.left;
@@ -157,7 +183,7 @@ class Game {
 
     handleTouchMove(event) {
         event.preventDefault();
-        if (!this.touchStartX || !this.touchStartY) return;
+        if (this.gameOver || !this.touchStartX || !this.touchStartY) return;
 
         const touch = event.touches[0];
         const rect = this.canvas.getBoundingClientRect();
@@ -167,17 +193,19 @@ class Game {
         const deltaX = currentX - this.touchStartX;
         const deltaY = currentY - this.touchStartY;
 
-        // Minimum swipe distance threshold
-        const minSwipeDistance = 30;
+        // Minimum swipe distance threshold (smaller for better responsiveness)
+        const minSwipeDistance = 20;
 
         if (Math.abs(deltaX) > minSwipeDistance || Math.abs(deltaY) > minSwipeDistance) {
             if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                // Horizontal swipe
                 if (deltaX > 0) {
                     this.snake.changeDirection('right');
                 } else {
                     this.snake.changeDirection('left');
                 }
             } else {
+                // Vertical swipe
                 if (deltaY > 0) {
                     this.snake.changeDirection('down');
                 } else {
@@ -198,24 +226,31 @@ class Game {
     }
 
     handleKeyPress(event) {
+        if (this.gameOver) return;
+        
         const keyMap = {
             'ArrowUp': 'up',
+            'w': 'up',
+            'W': 'up',
             'ArrowDown': 'down',
+            's': 'down',
+            'S': 'down',
             'ArrowLeft': 'left',
-            'ArrowRight': 'right'
+            'a': 'left',
+            'A': 'left',
+            'ArrowRight': 'right',
+            'd': 'right',
+            'D': 'right'
         };
 
         if (keyMap[event.key]) {
+            event.preventDefault(); // Prevent page scrolling with arrow keys
             this.snake.changeDirection(keyMap[event.key]);
         }
     }
 
     update() {
-        if (this.gameOver) return;
-
-        // Don't update if level up popup is showing
-        const levelUpPopup = document.getElementById('levelUpPopup');
-        if (levelUpPopup.style.display === 'block') return;
+        if (this.gameOver || this.paused) return;
 
         this.snake.update();
 
@@ -230,17 +265,18 @@ class Game {
                 document.getElementById('level').textContent = this.level;
                 
                 // Show level up popup
-                levelUpPopup.style.display = 'block';
+                const levelUpPopup = document.getElementById('levelUpPopup');
                 document.getElementById('popupLevel').textContent = this.level;
+                levelUpPopup.style.display = 'block';
                 
-                // Pause the game
-                clearTimeout(this.gameLoopId);
+                // Pause the game during level up
+                this.paused = true;
                 
-                // Resume after 3 seconds
+                // Resume after 2 seconds (reduced from 3 for better game flow)
                 setTimeout(() => {
                     levelUpPopup.style.display = 'none';
-                    this.startGameLoop();
-                }, 3000);
+                    this.paused = false;
+                }, 2000);
             }
         }
 
@@ -249,24 +285,15 @@ class Game {
         }
     }
 
-    startGameLoop() {
-        const loop = () => {
-            this.update();
-            this.draw();
-            // Adjust speed based on level: starts at 200ms delay at level 1, decreases by 15ms per level
-            const delay = Math.max(50, 200 - ((this.level - 1) * 15));
-            this.gameLoopId = setTimeout(loop, delay);
-        };
-        loop();
-    }
-
     draw() {
+        // Clear the canvas first
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
         // Draw Albanian flag background
         this.ctx.fillStyle = '#E41E20';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Draw snake with animation
-        this.ctx.fillStyle = '#4CAF50';
         const animationProgress = (Date.now() % 500) / 500; // Animation cycle of 500ms
         
         // Draw snake with animation
@@ -301,6 +328,7 @@ class Game {
             const size = this.tileSize - 2;
             if (isHead) {
                 // Draw triangular head
+                this.ctx.fillStyle = '#4CAF50';
                 this.ctx.beginPath();
                 this.ctx.moveTo(size/2, 0);
                 this.ctx.lineTo(-size/2, -size/2);
@@ -316,44 +344,42 @@ class Game {
                 this.ctx.fill();
             } else {
                 // Draw rounded rectangle for body segments
+                this.ctx.fillStyle = '#4CAF50';
                 this.ctx.beginPath();
                 this.ctx.roundRect(-size/2, -size/2, size, size, 5);
                 this.ctx.fill();
             }
             
             this.ctx.restore();
-            // Reset fill style for next segment
-            this.ctx.fillStyle = '#4CAF50';
         }
 
         // Draw food
         this.ctx.fillStyle = '#fff';
-        this.ctx.fillRect(
-            this.food.x * this.tileSize,
-            this.food.y * this.tileSize,
-            this.tileSize - 1,
-            this.tileSize - 1
+        this.ctx.beginPath();
+        this.ctx.arc(
+            (this.food.x + 0.5) * this.tileSize,
+            (this.food.y + 0.5) * this.tileSize,
+            this.tileSize/2 - 1,
+            0,
+            Math.PI * 2
         );
+        this.ctx.fill();
 
         if (this.gameOver) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
             this.ctx.fillStyle = '#fff';
-            this.ctx.font = '48px Arial';
+            this.ctx.font = 'bold ' + Math.floor(this.canvas.width / 10) + 'px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText('Game Over!', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.font = 'bold ' + Math.floor(this.canvas.width / 20) + 'px Arial';
+            this.ctx.fillText('Score: ' + this.score, this.canvas.width / 2, this.canvas.height / 2 + 40);
+            this.ctx.fillText('Tap Restart to Play Again', this.canvas.width / 2, this.canvas.height / 2 + 80);
         }
     }
 }
 
-// Start the game
-const game = new Game();
-function gameLoop() {
-    game.update();
-    game.draw();
-    // Speed increases with level (minimum delay 50ms)
-    const delay = Math.max(50, 150 - (game.level * 10));
-    setTimeout(gameLoop, delay);
-}
-
-gameLoop();
+// Start the game - only create one instance and don't run duplicate game loops
+document.addEventListener('DOMContentLoaded', () => {
+    const game = new Game();
+});
